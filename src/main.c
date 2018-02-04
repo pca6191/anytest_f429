@@ -27,12 +27,15 @@
 
 // ----------------------------------------------------------------------------
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "diag/Trace.h"
-
+#include "global_configs.h"
 #include "Timer.h"
 #include "BlinkLed.h"
+
+#include "dv_stm32f429_lcd.h"
 
 // ----------------------------------------------------------------------------
 //
@@ -67,36 +70,58 @@
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 #pragma GCC diagnostic ignored "-Wreturn-type"
 
-int
-main(int argc, char* argv[])
+void main_setup(void)
 {
   // Send a greeting to the trace device (skipped on Release).
-  trace_puts("Hello ARM World!");
+  //trace_puts("Hello ARM World!");
 
   // At this stage the system clock should have already been configured
   // at high speed.
-  trace_printf("System clock: %u Hz\n", SystemCoreClock);
+  //trace_printf("System clock: %u Hz\n", SystemCoreClock);
 
   timer_start();
 
-  blink_led_init();
-  
-  uint32_t seconds = 0;
+#if USE_BLINKLED_PROCESS
+	blink_led_init();
+#endif
 
-  // Infinite loop
-  while (1)
-    {
-      blink_led_on();
-      timer_sleep(seconds == 0 ? TIMER_FREQUENCY_HZ : BLINK_ON_TICKS);
+#if USE_LCD_PROCESS
+	dv_stm32f429_lcd_setup();
+#endif
+}
 
-      blink_led_off();
-      timer_sleep(BLINK_OFF_TICKS);
+void main_loop(void)
+{
+#if USE_BLINKLED_PROCESS
+	uint32_t seconds = 0;
+	while (1)
+	{
+		blink_led_on();
+		timer_sleep(seconds == 0 ? TIMER_FREQUENCY_HZ : BLINK_ON_TICKS);
 
-      ++seconds;
-      // Count seconds on the trace device.
-      trace_printf("Second %u\n", seconds);
-    }
-  // Infinite loop, never return.
+		blink_led_off();
+		timer_sleep(BLINK_OFF_TICKS);
+
+		++seconds;
+		// Count seconds on the trace device.
+		//trace_printf("Second %u\n", seconds);
+	}
+#endif
+
+#if USE_LCD_PROCESS
+	dv_stm32f429_lcd_process();
+#endif
+}
+
+int
+main(int argc, char* argv[])
+{
+	main_setup();
+
+	while (1)
+	{
+		main_loop();
+	}
 }
 
 #pragma GCC diagnostic pop
