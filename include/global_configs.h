@@ -9,7 +9,8 @@
 #define MAIN_H_
 
 #define USE_BLINKLED_PROCESS    0
-#define USE_LCD_PROCESS         1
+#define USE_LCD_PROCESS         0
+#define USE_I2C_PROCESS         1
 
 
 
