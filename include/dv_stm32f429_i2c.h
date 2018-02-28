@@ -8,7 +8,7 @@
 #ifndef DV_STM32F429_I2C_H_
 #define DV_STM32F429_I2C_H_
 
-#define MASTER_BOARD
+//#define MASTER_BOARD
 #define I2C_ADDRESS        0x30F
 
 /* Definition for I2Cx clock resources */

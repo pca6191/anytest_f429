@@ -445,13 +445,13 @@
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.137130313;ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.137130313.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.2101583179;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.131590782">
+		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.727795633;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.727795633.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1709724034;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.18087356">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.727795633;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.727795633.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.5265519;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.1669663140">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.727795633;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.727795633.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1709724034;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.18087356">
+		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.137130313;ilg.gnuarmeclipse.managedbuild.cross.config.elf.release.137130313.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.2101583179;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.131590782">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>

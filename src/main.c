@@ -38,6 +38,7 @@
 #include "dv_stm32f429_lcd.h"
 #include "dv_stm32f429_i2c.h"
 #include "dv_stm32f429_uart.h"
+#include "dv_stm32f429_spi.h"
 
 // ----------------------------------------------------------------------------
 //
@@ -98,6 +99,10 @@ void main_setup(void)
 #if USE_UART_PROCESS
     dv_stm32f429_uart_setup();
 #endif
+
+#if USE_SPI_PROCESS
+    dv_stm32f429_SPI_setup();
+#endif
 }
 
 void main_loop(void)
@@ -128,6 +133,10 @@ void main_loop(void)
 
 #if USE_UART_PROCESS
     dv_stm32f429_uart_process();
+#endif
+
+#if USE_SPI_PROCESS
+    dv_stm32f429_spi_process();
 #endif
 }
 

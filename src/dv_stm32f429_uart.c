@@ -28,7 +28,7 @@ UART_HandleTypeDef huart5;  //TX/RX 可用
 
 DMA_HandleTypeDef hdma_usart5_rx; //使用 DMA1, Stream0, Ch4
 
-uint8_t send_data=32,receive_data=0;
+static uint8_t send_data=32,receive_data=0;
 
 static void Error_Handler(void);
 static void println(char *s);
@@ -70,7 +70,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 //=============================================================================
 void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 {
-
     GPIO_InitTypeDef GPIO_InitStruct;
 
     if (huart->Instance == UART4)
