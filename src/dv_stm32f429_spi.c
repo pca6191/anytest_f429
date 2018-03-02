@@ -12,16 +12,18 @@
  * @file ref: https://github.com/pca6191/STM32F4-Discovery-Tutorial/tree/master/11.SPI%20Send%20_Receive%20Data%20Using%20DMA
  */
 /*********************************************************************************************
-In this example I will use SPI3 run in mode Master(NSS pin control by software) to send data.
-SPI4 run in mode Slave (NSS pin control by harware) receive data using DMA.
-PC11 (SPI3 MISO) connect to PE5(SPI4 MISO).
-PC12 (SPI3 MOSI) connect to PE6(SPI4 MOSI).
-PC10 (SPI3 SCK) connect to PE2 (SPI4 SCK).
-PC8 (SPI3 NSS pin control by sofware) connect to PE4(SPI4 NSS pin control by hardware).
+  In this example I will use SPI3 run in mode Master(NSS pin control by software) to send data.
+  SPI4 run in mode Slave (NSS pin control by harware) receive data using DMA.
+  PC12 (SPI3 MOSI) connect to PE6(SPI4 MOSI).
+  PC11 (SPI3 MISO) connect to PE5(SPI4 MISO).
+  PB3 (SPI3 SCK) connect to PE2 (SPI4 SCK).
+  PC8 (SPI3 NSS pin control by sofware) connect to PE4(SPI4 NSS pin control by hardware).
+
+  master 送 1 byte, slave 收到無誤，就 toggle PG13 (green led) 一次
 **********************************************************************************************/
 
 #define spi_enable      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET)
-#define spi_disable   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET)
+#define spi_disable     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET)
 
 SPI_HandleTypeDef hspi3;
 SPI_HandleTypeDef hspi4;
@@ -39,7 +41,7 @@ static uint8_t send_data=32,receive_data=0;
 //  中斷 Call back 區域
 //=============================================================================
 /**
-* @brief This function handles DMA1 stream0 global interrupt.
+* @brief This function handles DMA2 stream0 global interrupt.
 */
 void DMA2_Stream0_IRQHandler(void)
 {
@@ -67,14 +69,28 @@ void SPI4_IRQHandler(void)
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-    if(hspi->Instance==hspi3.Instance)
+    if (hspi->Instance == hspi3.Instance)
     {
         //master 中斷送完，關閉 spi device. (CS high)..(active low)
         spi_disable;
     }
-    else if(hspi->Instance==hspi4.Instance)
+}
+
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+    if (hspi->Instance == hspi4.Instance)
     {
-        //顯示 receive_data
+        //顯示 receive_data 是否正確
+        if (send_data == receive_data)
+        {
+            HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_13);
+            receive_data = 0;
+        }
+        else
+        {
+            HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_14);
+            receive_data = 0;
+        }
     }
 }
 
@@ -91,16 +107,23 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
         ;
 
         /**SPI3 GPIO Configuration
-         PC11     ------> SPI3_MISO
          PC12     ------> SPI3_MOSI
-         PC10     ------> SPI3_SCK
+         PC11     ------> SPI3_MISO
+         PB3     ------> SPI3_SCK
          */
-        GPIO_InitStruct.Pin = GPIO_PIN_11 | GPIO_PIN_12 |GPIO_PIN_10;
+        GPIO_InitStruct.Pin = GPIO_PIN_11 | GPIO_PIN_12;
         GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
         GPIO_InitStruct.Pull = GPIO_NOPULL;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
         GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
         HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+        GPIO_InitStruct.Pin = GPIO_PIN_3;
+        GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+        GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
+        HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
         /* Peripheral interrupt init */
         HAL_NVIC_SetPriority(SPI3_IRQn, 0, 0);
@@ -113,20 +136,20 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
         ;
 
         /**SPI4 GPIO Configuration
-         PE4     ------> SPI4_NSS
-         PE2     ------> SPI3_SCK
-         PE5     ------> SPI3_MISO
          PE6     ------> SPI3_MOSI
+         PE5     ------> SPI3_MISO
+         PE2     ------> SPI3_SCK
+         PE4     ------> SPI4_NSS
          */
         GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_2|GPIO_PIN_5|GPIO_PIN_6;
         GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
         GPIO_InitStruct.Pull = GPIO_NOPULL;
-        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+        GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
         GPIO_InitStruct.Alternate = GPIO_AF5_SPI4;
         HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
         /* Peripheral DMA init*/
-        __HAL_RCC_DMA1_CLK_ENABLE()
+        __HAL_RCC_DMA2_CLK_ENABLE()
          ;
         hdma_spi4_rx.Instance = DMA2_Stream0;
         hdma_spi4_rx.Init.Channel = DMA_CHANNEL_4;
@@ -145,10 +168,6 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
         }
 
         __HAL_LINKDMA(hspi, hdmarx, hdma_spi4_rx);
-
-        /* Peripheral interrupt init */
-        HAL_NVIC_SetPriority(SPI4_IRQn, 0, 0);
-        HAL_NVIC_EnableIRQ(SPI4_IRQn);
     }
 }
 
@@ -163,9 +182,10 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* hspi)
     /**SPI3 GPIO Configuration
      PC11     ------> SPI3_MISO
      PC12     ------> SPI3_MOSI
-     PC10     ------> SPI3_SCK
+      PB3     ------> SPI3_SCK
      */
-    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_10);
+    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_11|GPIO_PIN_12);
+    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_3);
 
     /* Peripheral interrupt DeInit*/
     HAL_NVIC_DisableIRQ(SPI3_IRQn);
@@ -201,7 +221,7 @@ static void SPI3_Init(void)
     hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
     hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;
     hspi3.Init.NSS = SPI_NSS_SOFT;
-    hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+    hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
     hspi3.Init.FirstBit = SPI_FIRSTBIT_MSB;
     hspi3.Init.TIMode = SPI_TIMODE_DISABLE;
     hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -210,9 +230,6 @@ static void SPI3_Init(void)
     {
         Error_Handler();
     }
-    /* DMA2_Stream0_IRQn interrupt configuration */
-    HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
 }
 
 /* SPI4 init function */
@@ -229,25 +246,19 @@ static void SPI4_Init(void)
     hspi4.Init.TIMode = SPI_TIMODE_DISABLE;
     hspi4.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
     hspi4.Init.CRCPolynomial = 10;
+
     if (HAL_SPI_Init(&hspi4) != HAL_OK)
     {
         Error_Handler();
     }
-}
 
-/**
-  * Enable DMA controller clock
-  */
-static void DMA_Init(void)
-{
-//    /* DMA controller clock enable */
-//    __HAL_RCC_DMA1_CLK_ENABLE()
-//    ;
-//
-//    /* DMA interrupt init */
-//    /* DMA2_Stream0_IRQn interrupt configuration */
-//    HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
-//    HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+    /* DMA2_Stream0_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+
+    /* Peripheral interrupt init */
+    HAL_NVIC_SetPriority(SPI4_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(SPI4_IRQn);
 }
 
 /** Configure pins as
@@ -262,20 +273,33 @@ static void GPIO_Init(void)
     GPIO_InitTypeDef GPIO_InitStruct;
 
     /* GPIO Ports Clock Enable */
+    __HAL_RCC_GPIOB_CLK_ENABLE()
+    ;
     __HAL_RCC_GPIOC_CLK_ENABLE()
     ;
     __HAL_RCC_GPIOE_CLK_ENABLE()
     ;
-
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
+    __HAL_RCC_GPIOG_CLK_ENABLE()
+    ;
 
     /*Configure GPIO pin : PC8 */
     GPIO_InitStruct.Pin = GPIO_PIN_8;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET);
+
+    /*Configure GPIO pin : PG13 */
+    GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_14;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOG, GPIO_PIN_14, GPIO_PIN_RESET);
 }
 
 /**
@@ -298,12 +322,18 @@ void Error_Handler(void)
  */
 void dv_stm32f429_SPI_setup()
 {
+#if TEST_MASTER_OUTPUT
     GPIO_Init();
-    DMA_Init();
+    SPI3_Init();
+#endif
+
+
+#if TEST_DMA_LOOP
+    GPIO_Init();
     SPI3_Init();
     SPI4_Init();
-
     HAL_SPI_Receive_DMA(&hspi4, &receive_data, 1);
+#endif
 }
 
 /*
@@ -311,8 +341,17 @@ void dv_stm32f429_SPI_setup()
  */
 void dv_stm32f429_spi_process()
 {
+#if TEST_MASTER_OUTPUT
+    spi_enable;
+    send_data = 0xAA;
+    HAL_SPI_Transmit_IT(&hspi3, &send_data, 1);
+    HAL_Delay(1);
+#endif
+
+#if TEST_DMA_LOOP
     spi_enable;
     HAL_SPI_Transmit_IT(&hspi3, &send_data, 1);
     HAL_Delay(300);
     send_data++;
+#endif
 }
