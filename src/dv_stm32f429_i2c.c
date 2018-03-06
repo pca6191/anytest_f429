@@ -13,24 +13,24 @@
   |           ______________|                      |______________           |
   |          | I2C1         |                      |          I2C1|          |
   |          |              |                      |              |          |
-  |          |      SCL(PB6)|______________________|(PB6)SCL      |          |
+  |          |      SCL(PA8)|______________________|(PA8)SCL      |          |
   |          |              |                      |              |          |
   |          |              |                      |              |          |
   |          |              |                      |              |          |
-  |          |      SDA(PB9)|______________________|(PB9)SDA      |          |
+  |          |      SDA(PC9)|______________________|(PC9)SDA      |          |
   |          |              |                      |              |          |
   |          |______________|                      |______________|          |
   |      __                 |                      |        __               |
   |     |__|                |                      |       |__|              |
   |     USER             GND|______________________|GND    USER              |
   |                         |                      |                         |
-  |_STM32F4 ________________|                      |_STM32F4 ________________|
+  |_STM32F429_______________|                      |_STM32F429_______________|
 
  */
+#include "global_configs.h"
 #include "stm32f4xx_hal.h"
-#include "stm32f429i_discovery.h"
+#include "dv_led.h"
 #include "dv_stm32f429_i2c.h"
-#include "stm32f429i_discovery_lcd.h"
 
 I2C_HandleTypeDef I2cHandle;
 
@@ -61,34 +61,37 @@ static void Error_Handler(void);
   */
 void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)
 {
-  GPIO_InitTypeDef  GPIO_InitStruct;
+    GPIO_InitTypeDef GPIO_InitStruct;
 
     if (hi2c == NULL)
     {
     }
 
-  /*##-1- Enable peripherals and GPIO Clocks #################################*/
-  /* Enable GPIO TX/RX clock */
-  I2Cx_SCL_GPIO_CLK_ENABLE();
-  I2Cx_SDA_GPIO_CLK_ENABLE();
-  /* Enable I2C1 clock */
-  I2Cx_CLK_ENABLE();
+    /*##-1- Enable peripherals and GPIO Clocks #################################*/
+    /* Enable GPIO TX/RX clock */
+    I2Cx_SCL_GPIO_CLK_ENABLE()
+    ;
+    I2Cx_SDA_GPIO_CLK_ENABLE()
+    ;
+    /* Enable I2Cx clock */
+    I2Cx_CLK_ENABLE()
+    ;
 
-  /*##-2- Configure peripheral GPIO ##########################################*/
-  /* I2C TX GPIO pin configuration  */
-  GPIO_InitStruct.Pin       = I2Cx_SCL_PIN;
-  GPIO_InitStruct.Mode      = GPIO_MODE_AF_OD;
-  GPIO_InitStruct.Pull      = GPIO_PULLUP;
-  GPIO_InitStruct.Speed     = GPIO_SPEED_FAST;
-  GPIO_InitStruct.Alternate = I2Cx_SCL_AF;
+    /*##-2- Configure peripheral GPIO ##########################################*/
+    /* I2C TX GPIO pin configuration  */
+    GPIO_InitStruct.Pin = I2Cx_SCL_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
+    GPIO_InitStruct.Alternate = I2Cx_SCL_AF;
 
-  HAL_GPIO_Init(I2Cx_SCL_GPIO_PORT, &GPIO_InitStruct);
+    HAL_GPIO_Init(I2Cx_SCL_GPIO_PORT, &GPIO_InitStruct);
 
-  /* I2C RX GPIO pin configuration  */
-  GPIO_InitStruct.Pin = I2Cx_SDA_PIN;
-  GPIO_InitStruct.Alternate = I2Cx_SDA_AF;
+    /* I2C RX GPIO pin configuration  */
+    GPIO_InitStruct.Pin = I2Cx_SDA_PIN;
+    GPIO_InitStruct.Alternate = I2Cx_SDA_AF;
 
-  HAL_GPIO_Init(I2Cx_SDA_GPIO_PORT, &GPIO_InitStruct);
+    HAL_GPIO_Init(I2Cx_SDA_GPIO_PORT, &GPIO_InitStruct);
 }
 
 /**
@@ -145,69 +148,16 @@ static uint16_t Buffercmp(uint8_t* pBuffer1, uint8_t* pBuffer2, uint16_t BufferL
   *   This parameter should be: BUTTON_KEY
   * @retval The Button GPIO pin value.
   */
-static uint32_t user_btn_state(Button_TypeDef button)
+static bool is_usrbtn_pressed()
 {
-    switch(button)
+    if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET)
     {
-        case BUTTON_KEY:
-            return HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
-            break;
-
-        default:
-            break;
+        return true;
     }
-
-    return 0;
-}
-
-/**
-  * @brief  Turns selected LED On.
-  * @param  Led: Specifies the Led to be set on.
-  *   This parameter can be one of following parameters:
-  *     @arg LED3
-  *     @arg LED4
-  */
-static void led_on(Led_TypeDef led)
-{
-    switch(led)
+    else
     {
-        case LED3:
-            HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
-            break;
-
-        case LED4:
-            HAL_GPIO_WritePin(GPIOG, GPIO_PIN_14, GPIO_PIN_SET);
-            break;
-
-        default:
-            break;
+        return false;
     }
-
-}
-
-/**
-  * @brief  Turns selected LED Off.
-  * @param  Led: Specifies the Led to be set on.
-  *   This parameter can be one of following parameters:
-  *     @arg LED3
-  *     @arg LED4
-  */
-static void led_off(Led_TypeDef led)
-{
-    switch(led)
-    {
-        case LED3:
-            HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_RESET);
-            break;
-
-        case LED4:
-            HAL_GPIO_WritePin(GPIOG, GPIO_PIN_14, GPIO_PIN_RESET);
-            break;
-
-        default:
-            break;
-    }
-
 }
 
 /**
@@ -218,7 +168,7 @@ static void led_off(Led_TypeDef led)
 static void Error_Handler(void)
 {
   /* Turn LED4 on */
-  led_on(LED4);
+  dv_led_on(led_red);
   while(1)
   {
   }
@@ -232,14 +182,18 @@ void dv_stm32f429_i2c_init(void)
     /*##-1- Configure the I2C peripheral #######################################*/
     I2cHandle.Instance = I2Cx;
 
-    I2cHandle.Init.AddressingMode = I2C_ADDRESSINGMODE_10BIT;
-    I2cHandle.Init.ClockSpeed = 400000;
+    I2cHandle.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+    I2cHandle.Init.ClockSpeed = 100000;
     I2cHandle.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-    I2cHandle.Init.DutyCycle = I2C_DUTYCYCLE_16_9;
+    I2cHandle.Init.DutyCycle = I2C_DUTYCYCLE_2;
     I2cHandle.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
     I2cHandle.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
     I2cHandle.Init.OwnAddress1 = I2C_ADDRESS;
-    I2cHandle.Init.OwnAddress2 = 0xFE;
+    I2cHandle.Init.OwnAddress2 = 0;
+
+    //執行此步驟，確保 i2c 沒有被咬住，往下才不會觸發 busy 導致第一次 transmit 失敗
+    I2Cx_FORCE_RESET();
+    I2Cx_RELEASE_RESET();
 
     if (HAL_I2C_Init(&I2cHandle) != HAL_OK)
     {
@@ -262,46 +216,11 @@ void dv_stm32f429_i2c_setup(void)
     {
     GPIO_PIN_0, GPIO_MODE_INPUT, GPIO_PULLDOWN, GPIO_SPEED_LOW, 0
     };
-    GPIO_InitTypeDef type_G =
-    {
-    GPIO_PIN_13, GPIO_MODE_OUTPUT_PP, GPIO_PULLUP, GPIO_SPEED_FAST, 0
-    };
 
-    __GPIOA_CLK_ENABLE()
-    ;
-    __GPIOG_CLK_ENABLE()
-    ;
+    /* enable user button gpio */
+    __GPIOA_CLK_ENABLE();
+
     HAL_GPIO_Init(GPIOA, &type_A);
-
-    HAL_GPIO_Init(GPIOG, &type_G);
-
-    type_G.Pin = GPIO_PIN_14;
-    HAL_GPIO_Init(GPIOG, &type_G);
-
-    // init LCD
-    BSP_LCD_Init();
-
-    /* Initialize the LCD Layers */
-    BSP_LCD_LayerDefaultInit(1, LCD_FRAME_BUFFER);
-
-    /* Set LCD Foreground Layer  */
-    BSP_LCD_SelectLayer(1);
-    BSP_LCD_SetFont(&Font16);
-
-    /* Clear the LCD */
-    BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-    BSP_LCD_Clear(LCD_COLOR_WHITE);
-
-    /* Set the LCD Text Color */
-    BSP_LCD_SetTextColor(LCD_COLOR_DARKBLUE);
-
-#ifdef MASTER_BOARD
-    /* Display LCD messages */
-    BSP_LCD_DisplayStringAt(0, 10, (uint8_t*) "Master:", LEFT_MODE);
-#else
-    /* Display LCD messages */
-    BSP_LCD_DisplayStringAt(0, 10, (uint8_t*) "Slave:", LEFT_MODE);
-#endif
 }
 
 /*
@@ -309,112 +228,88 @@ void dv_stm32f429_i2c_setup(void)
  */
 void dv_stm32f429_i2c_process(void)
 {
-#ifdef MASTER_BOARD
-    /* Wait for USER Button press before starting the Communication */
-    while (user_btn_state(BUTTON_KEY) != 1) //while(not pressed)
+#if MASTER_BOARD
+    //-- 沒有按下按鈕，卡這裡等 ---------------------------------------
+    while (is_usrbtn_pressed() == false) //while(not pressed)
     {
     }
 
-    /* Wait for USER Button release before starting the Communication */
-    while (user_btn_state(BUTTON_KEY) != 0) //while(pressed)
+    //-- 等按鈕按下 -------------------------------------------------
+    while (is_usrbtn_pressed() == true) //while(pressed)
     {
     }
 
-    //released button
-
-    /* The board sends the message and expects to receive it back */
-
-    /*##-2- Start the transmission process #####################################*/
-    /* While the I2C in reception process, user can transmit data through
-     "aTxBuffer" buffer */
-    /* Timeout is set to 10S */
-    while (HAL_I2C_Master_Transmit(&I2cHandle, (uint16_t) I2C_ADDRESS,
-            (uint8_t*) aTxBuffer, TXBUFFERSIZE, 10000) != HAL_OK)
+    //-- 發送資料，10 秒內送不出去，亮 error 燈 (紅色) 卡死 --------------
+    while (HAL_I2C_Master_Transmit(&I2cHandle, (uint16_t) I2C_ADDRESS, (uint8_t*) aTxBuffer, TXBUFFERSIZE, 10000)
+            != HAL_OK)
     {
-        /* Error_Handler() function is called when Timeout error occurs.
-         When Acknowledge failure occurs (Slave don't acknowledge it's address)
-         Master restarts communication */
+        //如果 slave 沒回應的 AF error，則繼續送; 其他 error，就 error handle 亮紅燈
         if (HAL_I2C_GetError(&I2cHandle) != HAL_I2C_ERROR_AF)
         {
-            BSP_LCD_DisplayStringAt(0, 30, (uint8_t*) "e1, ", LEFT_MODE);
             Error_Handler();
         }
     }
 
-    /* Turn LED3 on: Transfer in Transmission process is correct */
-    led_on(LED3);
-    BSP_LCD_DisplayStringAt(0, 50, (uint8_t*) "s1, ", LEFT_MODE);
+    //-- 送成功，亮綠燈 ------------------------------------------------------
+    dv_led_on(led_green);
 
-    /* Wait for USER Button press before starting the Communication */
-    while (user_btn_state(BUTTON_KEY) != 1)
+    //-- 再按一次，收資料 --
+    //-- 沒有按下按鈕，卡這裡等 ---------------------------------------
+    while (is_usrbtn_pressed() == false)
     {
     }
 
-    /* Wait for USER Button release before starting the Communication */
-    while (user_btn_state(BUTTON_KEY) != 0)
+    //-- 等按鈕按下 -------------------------------------------------
+    while (is_usrbtn_pressed() == true)
     {
     }
 
-    /*##-3- Put I2C peripheral in reception process ############################*/
-    /* Timeout is set to 10S */
-    while (HAL_I2C_Master_Receive(&I2cHandle, (uint16_t) I2C_ADDRESS,
-            (uint8_t *) aRxBuffer, RXBUFFERSIZE, 10000) != HAL_OK)
+    //-- 收資料， 10 秒內收不到，亮 error 燈 (紅燈) 卡死 ------------------
+    while (HAL_I2C_Master_Receive(&I2cHandle, (uint16_t) I2C_ADDRESS, (uint8_t *) aRxBuffer, RXBUFFERSIZE, 10000)
+            != HAL_OK)
     {
-        /* Error_Handler() function is called when Timeout error occurs.
-         When Acknowledge failure occurs (Slave don't acknowledge it's address)
-         Master restarts communication */
+        //-- 收資料， 10 秒內收不到，亮 error 燈 (紅燈) 卡死 ------------------
         if (HAL_I2C_GetError(&I2cHandle) != HAL_I2C_ERROR_AF)
         {
-            BSP_LCD_DisplayStringAt(0, 30, (uint8_t*) "e2, ", LEFT_MODE);
             Error_Handler();
         }
     }
 
-    /* Turn LED3 off: Transfer in reception process is correct */
-    led_off(LED3);
-    BSP_LCD_DisplayStringAt(0, 50, (uint8_t*) "s2, ", LEFT_MODE);
+    //-- 收成功，關綠燈 ------------------------------------------------------
+    dv_led_off(led_green);
 #else
 
-    /* The board receives the message and sends it back */
+    //=========================================================================
+    // Slave 接收訊息並且回傳
+    //=========================================================================
 
-    /*##-2- Put I2C peripheral in reception process ############################*/
-    /* Timeout is set to 10S  */
+    //-- 聽 10 秒，沒有收到就 亮 error 燈 (紅燈) 卡死 ---------------------------
     if(HAL_I2C_Slave_Receive(&I2cHandle, (uint8_t *)aRxBuffer, RXBUFFERSIZE, 10000) != HAL_OK)
     {
-        BSP_LCD_DisplayStringAt(0, 30, (uint8_t*) "e1, ", LEFT_MODE);
         /* Transfer error in reception process */
         Error_Handler();
     }
 
-    /* Turn LED3 on: Transfer in reception process is correct */
-    led_on(LED3);
-    BSP_LCD_DisplayStringAt(0, 50, (uint8_t*) "s1, ", LEFT_MODE);
+    //-- 收到訊息亮綠燈 ------------------------------------------------------
+    dv_led_on(led_green);
 
-    /*##-3- Start the transmission process #####################################*/
-    /* While the I2C in reception process, user can transmit data through
-     "aTxBuffer" buffer */
-    /* Timeout is set to 10S */
+    //-- 送收到的資料， 10 秒內送不出去，亮 error 燈 (紅燈) 卡死 ------------------
     if(HAL_I2C_Slave_Transmit(&I2cHandle, (uint8_t*)aTxBuffer, TXBUFFERSIZE, 10000)!= HAL_OK)
     {
-        BSP_LCD_DisplayStringAt(0, 30, (uint8_t*) "e2, ", LEFT_MODE);
         /* Transfer error in transmission process */
         Error_Handler();
     }
 
-    /* Turn LED3 off: Transfer in transmission process is correct */
-    led_off(LED3);
-    BSP_LCD_DisplayStringAt(0, 50, (uint8_t*) "s2, ", LEFT_MODE);
+    //-- 送成功，關綠燈 ------------------------------------------------------
+    dv_led_off(led_green);
 
-#endif /* MASTER_BOARD */
+#endif //end MASTER_BOARD
 
-    /*##-4- Compare the sent and received buffers ##############################*/
+    //-- 最後比較收、送資料，不一致就 error 燈 (紅燈) 卡死 ------------------------
     if (Buffercmp((uint8_t*) aTxBuffer, (uint8_t*) aRxBuffer, RXBUFFERSIZE))
     {
-        BSP_LCD_DisplayStringAt(0, 30, (uint8_t*) "e3, ", LEFT_MODE);
         /* Processing Error */
         Error_Handler();
     }
-
-    BSP_LCD_DisplayStringAt(0, 50, (uint8_t*) "s3, ", LEFT_MODE);
 }
 

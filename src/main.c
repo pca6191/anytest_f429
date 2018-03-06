@@ -35,6 +35,7 @@
 #include "Timer.h"
 #include "BlinkLed.h"
 
+#include "dv_led.h"
 #include "dv_stm32f429_lcd.h"
 #include "dv_stm32f429_i2c.h"
 #include "dv_stm32f429_uart.h"
@@ -83,6 +84,7 @@ void main_setup(void)
   //trace_printf("System clock: %u Hz\n", SystemCoreClock);
 
   timer_start();
+  dv_led_init();
 
 #if USE_BLINKLED_PROCESS
 	blink_led_init();
