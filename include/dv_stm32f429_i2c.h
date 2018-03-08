@@ -9,7 +9,8 @@
 #define DV_STM32F429_I2C_H_
 
 #define MASTER_BOARD       1
-#define I2C_ADDRESS        0x30F
+#define I2C_ADDRESS        0x30 //ex. 0x30, LA 從左到右 address bit 應為
+                                 // S 0011 000(w0/r1)
 
 /* Definition for I2Cx clock resources */
 #define I2Cx                             I2C3

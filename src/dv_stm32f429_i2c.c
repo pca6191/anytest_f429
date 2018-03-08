@@ -26,6 +26,12 @@
   |                         |                      |                         |
   |_STM32F429_______________|                      |_STM32F429_______________|
 
+  - 承上：兩塊 discovery 5V - 5V , GND - GND 對接
+  - 正常操作：
+     1. master 接 usb 通電 (slave 跟著吃電).
+     2. 10 秒內，master 按下按鈕，兩板子綠燈亮，表示 master --> slave 成功送收。
+     3. 再按下按鈕，兩板子綠燈滅，表示 slave --> master 回送接收成功。
+     4. 以上超過 10 秒按鈕、或訊號有誤，則亮紅燈卡死。
  */
 #include "global_configs.h"
 #include "stm32f4xx_hal.h"
