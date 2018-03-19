@@ -32,12 +32,15 @@
 #include <stdlib.h>
 #include "diag/Trace.h"
 #include "global_configs.h"
+#include "stm32f4xx_hal.h"
 #include "Timer.h"
 #include "BlinkLed.h"
 
 #include "dv_led.h"
 #include "dv_stm32f429_lcd.h"
 #include "dv_stm32f429_i2c.h"
+#include "dv_stm32f429_i2cit.h"
+#include "dv_stm32f429_i2cdma.h"
 #include "dv_stm32f429_uart.h"
 #include "dv_stm32f429_spi.h"
 
@@ -98,6 +101,14 @@ void main_setup(void)
 	dv_stm32f429_i2c_setup();
 #endif
 
+#if USE_I2CIT_PROCESS
+    dv_stm32f429_i2cit_setup();
+#endif
+
+#if USE_I2CDMA_PROCESS
+    dv_stm32f429_i2cdma_setup();
+#endif
+
 #if USE_UART_PROCESS
     dv_stm32f429_uart_setup();
 #endif
@@ -131,6 +142,14 @@ void main_loop(void)
 
 #if USE_I2C_PROCESS
 	dv_stm32f429_i2c_process();
+#endif
+
+#if USE_I2CIT_PROCESS
+    dv_stm32f429_i2cit_process();
+#endif
+
+#if USE_I2CDMA_PROCESS
+    dv_stm32f429_i2cdma_process();
 #endif
 
 #if USE_UART_PROCESS
